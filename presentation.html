@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>耳塾 — 日语听力会话训练工具</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:   #3b82f6;
+  --navy:   #1e293b;
+  --dark:   #0f172a;
+  --light:  #f0f4f8;
+  --amber:  #f59e0b;
+  --green:  #10b981;
+  --text:   #1e293b;
+  --text2:  #64748b;
+  --white:  #ffffff;
+  --border: #e2e8f0;
+  --r:      12px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  background: #000;
+  overflow: hidden;
+}
+
+/* ── Slide container ── */
+#deck {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.slide {
+  display: none;
+  width: 100%; height: 100%;
+  position: absolute; top: 0; left: 0;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px 64px;
+  animation: fadeIn 0.4s ease;
+}
+.slide.active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Progress bar ── */
+#progress {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 3px; background: rgba(255,255,255,0.15);
+  z-index: 100;
+}
+#progress-bar {
+  height: 100%; background: var(--blue);
+  transition: width 0.4s ease;
+}
+
+/* ── Navigation controls ── */
+#nav {
+  position: fixed; bottom: 18px; right: 24px;
+  display: flex; align-items: center; gap: 12px;
+  z-index: 100;
+}
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.2s;
+}
+.nav-btn.light { background: rgba(255,255,255,0.15); color: #fff; }
+.nav-btn.light:hover { background: rgba(255,255,255,0.3); }
+.nav-btn.dark  { background: rgba(0,0,0,0.12); color: var(--navy); }
+.nav-btn.dark:hover  { background: rgba(0,0,0,0.22); }
+#counter {
+  font-size: 12px; font-weight: 500; min-width: 40px; text-align: center;
+}
+.counter-light { color: rgba(255,255,255,0.6); }
+.counter-dark  { color: var(--text2); }
+
+/* ── Fullscreen hint ── */
+#fs-hint {
+  position: fixed; top: 16px; right: 20px;
+  font-size: 11px; opacity: 0.5; z-index: 100;
+  transition: opacity 0.3s;
+}
+#fs-hint:hover { opacity: 1; cursor: pointer; }
+
+/* ═══════════════════════════════════════
+   SLIDE 1 — COVER
+════════════════════════════════════════ */
+#s1 {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  color: #fff;
+}
+.cover-deco {
+  position: absolute; right: 80px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 280px; font-weight: 900; opacity: 0.06;
+  color: #fff; line-height: 1; user-select: none;
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Meiryo', serif;
+}
+.cover-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.4);
+  color: #93c5fd; padding: 5px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 500; margin-bottom: 24px;
+}
+.cover-title {
+  font-size: 72px; font-weight: 900; line-height: 1;
+  letter-spacing: -2px; margin-bottom: 16px;
+}
+.cover-en {
+  font-size: 20px; color: rgba(255,255,255,0.5);
+  letter-spacing: 2px; font-weight: 400; margin-bottom: 32px;
+}
+.cover-sub {
+  font-size: 22px; color: rgba(255,255,255,0.75);
+  max-width: 520px; line-height: 1.6; margin-bottom: 48px;
+}
+.cover-year {
+  font-size: 13px; color: rgba(255,255,255,0.3);
+  letter-spacing: 2px;
+}
+.cover-left { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════
+   SLIDE 2 — 背景
+════════════════════════════════════════ */
+#s2 { background: var(--white); }
+
+.slide-header {
+  width: 100%; margin-bottom: 36px;
+}
+.slide-tag {
+  display: inline-block; background: #eff6ff; color: var(--blue);
+  font-size: 12px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.slide-title {
+  font-size: 38px; font-weight: 800; color: var(--navy);
+  line-height: 1.2;
+}
+.slide-title em { color: var(--blue); font-style: normal; }
+
+.scenario-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  width: 100%;
+}
+.scenario-card {
+  background: var(--light); border-radius: var(--r);
+  padding: 24px; border: 1px solid var(--border);
+}
+.scenario-icon {
+  font-size: 32px; margin-bottom: 12px;
+}
+.scenario-title {
+  font-size: 16px; font-weight: 700; color: var(--navy);
+  margin-bottom: 8px;
+}
+.scenario-desc {
+  font-size: 14px; color: var(--text2); line-height: 1.6;
+}
+
+.quote-block {
+  margin-top: 24px; width: 100%;
+  background: #fff7ed; border-left: 4px solid var(--amber);
+  padding: 16px 20px; border-radius: 0 var(--r) var(--r) 0;
+  color: #92400e; font-size: 15px; font-style: italic;
+}
+
+/* ═══════════════════════════════════════
+   SLIDE 3 — 痛点
+════════════════════════════════════════ */
+#s3 { background: #f8fafc; }
+
+.pain-list { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+.pain-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: var(--white); padding: 20px 24px;
+  border-radius: var(--r); border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.pain-num {
+  flex-shrink: 0; width: 32px; height: 32px;
+  background: #fee2e2; color: #dc2626;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+}
+.pain-body h4 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.pain-body p  { font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+.vs-arrow {
+  margin-top: 24px; width: 100%;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px; color: var(--text2);
+}
+.vs-arrow::before, .vs-arrow::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ═══════════════════════════════════════
+   SLIDE 4 — 耳塾是什么
+════════════════════════════════════════ */
+#s4 { background: var(--white); }
+
+.definition-box {
+  width: 100%; background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #bfdbfe; border-radius: 16px;
+  padding: 28px 32px; margin-bottom: 32px; text-align: center;
+}
+.definition-box .def-text {
+  font-size: 22px; font-weight: 700; color: var(--navy); line-height: 1.6;
+}
+.definition-box .def-sub {
+  margin-top: 8px; font-size: 14px; color: var(--text2);
+}
+
+.pillars {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%;
+}
+.pillar {
+  text-align: center; padding: 24px 16px;
+  border-radius: var(--r); border: 2px solid var(--border);
+  background: var(--white); transition: all 0.2s;
+}
+.pillar-icon { font-size: 40px; margin-bottom: 12px; }
+.pillar-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.pillar-desc  { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+/* ═══════════════════════════════════════
+   SLIDE 5 — 六大功能
+════════════════════════════════════════ */
+#s5 { background: #f8fafc; }
+
+.feature-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  width: 100%;
+}
+.feature-card {
+  background: var(--white); border-radius: var(--r);
+  padding: 20px; border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.feature-card .fc-icon {
+  font-size: 28px; margin-bottom: 10px;
+}
+.feature-card .fc-title {
+  font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 6px;
+}
+.feature-card .fc-desc {
+  font-size: 13px; color: var(--text2); line-height: 1.5;
+}
+.fc-tag {
+  display: inline-block; margin-top: 8px;
+  font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  font-weight: 600;
+}
+.fc-tag.free    { background: #d1fae5; color: #065f46; }
+.fc-tag.ai      { background: #ede9fe; color: #5b21b6; }
+.fc-tag.premium { background: #fff7ed; color: #92400e; }
+
+/* ═══════════════════════════════════════
+   SLIDE 6 — 使用流程
+════════════════════════════════════════ */
+#s6 { background: var(--white); }
+
+.flow-wrap {
+  display: flex; align-items: stretch; gap: 0;
+  width: 100%; margin-top: 8px;
+}
+.flow-step {
+  flex: 1; background: var(--light); border-radius: var(--r);
+  padding: 28px 20px; text-align: center; position: relative;
+}
+.flow-arrow {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; flex-shrink: 0; color: var(--text2); font-size: 22px;
+}
+.flow-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  font-size: 16px; font-weight: 700; margin-bottom: 14px;
+}
+.flow-step h4 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.flow-step p  { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.flow-detail {
+  margin-top: 10px; font-size: 12px; color: var(--blue);
+  background: #eff6ff; padding: 4px 10px; border-radius: 8px;
+  display: inline-block;
+}
+
+.flow-screen {
+  margin-top: 28px; width: 100%;
+  background: var(--navy); border-radius: 10px; padding: 14px 20px;
+  display: flex; gap: 20px; align-items: center;
+}
+.fs-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+.fs-val   { font-size: 13px; color: #fff; }
+.fs-sep   { width: 1px; background: rgba(255,255,255,0.15); align-self: stretch; }
+
+/* ═══════════════════════════════════════
+   SLIDE 7 — AI 集成
+════════════════════════════════════════ */
+#s7 { background: #f8fafc; }
+
+.llm-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  width: 100%; margin-bottom: 20px;
+}
+.llm-card {
+  background: var(--white); border-radius: var(--r);
+  padding: 18px 16px; border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.llm-name { font-size: 15px; font-weight: 700; color: var(--navy); }
+.llm-desc { font-size: 13px; color: var(--text2); }
+.llm-badge {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 8px; align-self: flex-start;
+}
+.lbg-free    { background: #d1fae5; color: #065f46; }
+.lbg-paid    { background: #eff6ff; color: #1d4ed8; }
+.lbg-cheap   { background: #fef9c3; color: #713f12; }
+
+.highlight-box {
+  width: 100%; background: linear-gradient(90deg, #f0fdf4, #eff6ff);
+  border: 1px solid #86efac; border-radius: var(--r);
+  padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+}
+.hb-icon { font-size: 28px; }
+.hb-text h4 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.hb-text p  { font-size: 13px; color: var(--text2); }
+
+/* ═══════════════════════════════════════
+   SLIDE 8 — 一键部署
+════════════════════════════════════════ */
+#s8 { background: var(--white); }
+
+.deploy-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  width: 100%; margin-bottom: 24px;
+}
+.deploy-card {
+  background: var(--light); border-radius: var(--r);
+  padding: 24px; border: 1px solid var(--border);
+}
+.deploy-os {
+  font-size: 18px; font-weight: 700; color: var(--navy);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+.deploy-steps { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.deploy-steps li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14px; color: var(--text2);
+}
+.step-dot {
+  flex-shrink: 0; width: 22px; height: 22px;
+  background: var(--blue); color: #fff;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; margin-top: 1px;
+}
+code {
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  background: var(--navy); color: #7dd3fc;
+  padding: 1px 7px; border-radius: 4px; font-size: 13px;
+}
+
+.req-row {
+  width: 100%; background: #f0fdf4; border: 1px solid #86efac;
+  border-radius: var(--r); padding: 14px 20px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; color: #065f46;
+}
+.req-row strong { font-weight: 700; }
+
+/* ═══════════════════════════════════════
+   SLIDE 9 — 成本
+════════════════════════════════════════ */
+#s9 { background: #f8fafc; }
+
+.cost-table {
+  width: 100%; border-collapse: collapse;
+  border-radius: var(--r); overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.cost-table th {
+  background: var(--navy); color: #fff;
+  padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600;
+}
+.cost-table td {
+  padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border);
+  background: var(--white);
+}
+.cost-table tr:last-child td { border-bottom: none; }
+.cost-table td:first-child { color: var(--navy); font-weight: 600; }
+.badge-free  { background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-paid  { background: #eff6ff; color: #1d4ed8; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-opt   { background: #f3f4f6; color: #374151; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+
+.summary-cards {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  width: 100%;
+}
+.sum-card {
+  background: var(--white); border-radius: var(--r);
+  padding: 18px; border: 1px solid var(--border); text-align: center;
+}
+.sum-card .sum-val { font-size: 30px; font-weight: 800; color: var(--blue); }
+.sum-card .sum-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   SLIDE 10 — CTA
+════════════════════════════════════════ */
+#s10 {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  color: #fff;
+}
+.cta-deco {
+  position: absolute; right: 80px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 220px; font-weight: 900; opacity: 0.05;
+  color: #fff; line-height: 1; user-select: none;
+  font-family: 'Noto Sans JP', serif;
+}
+.cta-wrap { position: relative; z-index: 1; width: 100%; }
+.cta-title {
+  font-size: 44px; font-weight: 800; margin-bottom: 12px;
+}
+.cta-sub {
+  font-size: 18px; color: rgba(255,255,255,0.6); margin-bottom: 40px;
+}
+
+.cta-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+  width: 100%;
+}
+.cta-card {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--r); padding: 20px;
+}
+.cta-card h4 { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 8px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.cta-card p  { font-size: 14px; color: #fff; line-height: 1.6; }
+.cta-link {
+  display: inline-block; margin-top: 6px;
+  color: #93c5fd; font-size: 13px; word-break: break-all;
+}
+
+.qr-box {
+  width: 80px; height: 80px; background: rgba(255,255,255,0.1);
+  border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: rgba(255,255,255,0.3); text-align: center;
+  line-height: 1.4;
+}
+
+.cta-bottom {
+  margin-top: 40px; display: flex; align-items: center; gap: 12px;
+}
+.qa-chip {
+  background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.4);
+  color: #93c5fd; padding: 8px 20px; border-radius: 20px;
+  font-size: 16px; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ══ SLIDE 1 — COVER ══════════════════════════════ -->
+  <div class="slide" id="s1">
+    <div class="cover-deco">耳</div>
+    <div class="cover-left">
+      <div class="cover-badge">
+        <span>🎌</span> 日语学习工具
+      </div>
+      <div class="cover-title">耳塾</div>
+      <div class="cover-en">JISHUKU · JAPANESE PRACTICE</div>
+      <div class="cover-sub">
+        基于 AI 的日语听力与会话训练平台<br>
+        为团队提升日语实战能力而生
+      </div>
+      <div class="cover-year">2025 &nbsp;·&nbsp; izoaixoah-sys</div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 2 — 背景 ════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <div class="slide-header">
+      <div class="slide-tag">背景</div>
+      <div class="slide-title">团队日语能力<em>提升</em>的现实需求</div>
+    </div>
+
+    <div class="scenario-grid">
+      <div class="scenario-card">
+        <div class="scenario-icon">📄</div>
+        <div class="scenario-title">阅读日语文档</div>
+        <div class="scenario-desc">技术文档、合同条款常为日语原版，读不懂就只能靠机器翻译，信息失真。</div>
+      </div>
+      <div class="scenario-card">
+        <div class="scenario-icon">🤝</div>
+        <div class="scenario-title">日方对接沟通</div>
+        <div class="scenario-desc">会议、邮件、出差场景中，日语沟通能力直接影响项目推进效率和信任感。</div>
+      </div>
+      <div class="scenario-card">
+        <div class="scenario-icon">📈</div>
+        <div class="scenario-title">个人竞争力</div>
+        <div class="scenario-desc">在涉日业务中，日语能力是明显加分项，也是晋升和派驻机会的重要条件。</div>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      💬 &nbsp;"听日语就像听天书，能听懂几个词就算不错了……"&nbsp;&mdash;&nbsp;团队成员的普遍反馈
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 3 — 痛点 ════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <div class="slide-header">
+      <div class="slide-tag">问题</div>
+      <div class="slide-title">传统学习方式的<em>三大痛点</em></div>
+    </div>
+
+    <div class="pain-list">
+      <div class="pain-item">
+        <div class="pain-num">1</div>
+        <div class="pain-body">
+          <h4>材料脱离实际，难以产生动力</h4>
+          <p>教材例句过于书面化，缺乏真实语境。背了又忘，学了不会用，很快放弃。</p>
+        </div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-num">2</div>
+        <div class="pain-body">
+          <h4>听力练习场景单一，输入不足</h4>
+          <p>只靠 App 刷题，缺乏持续、真实的听力输入。语感的建立需要大量沉浸式练习。</p>
+        </div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-num">3</div>
+        <div class="pain-body">
+          <h4>遇到不懂的词句，没有即时解答</h4>
+          <p>听到不理解的语法或词汇时，需要查词典、搜教程，严重打断学习节奏，久而久之失去兴趣。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="vs-arrow" style="margin-top:20px;">
+      &nbsp;&nbsp;耳塾 正是为解决这三个问题而设计&nbsp;&nbsp;
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 4 — 耳塾是什么 ═══════════════════════════ -->
+  <div class="slide" id="s4">
+    <div class="slide-header">
+      <div class="slide-tag">产品定义</div>
+      <div class="slide-title">耳塾是什么？</div>
+    </div>
+
+    <div class="definition-box">
+      <div class="def-text">
+        一款<strong>本地部署</strong>的日语智能练习工具：<br>
+        读真实文章、听真人朗读、配合 AI 即时解答语法词汇
+      </div>
+      <div class="def-sub">开源 · 免费核心功能 · 一键安装 · 数据不出本机</div>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar-icon">🔊</div>
+        <div class="pillar-title">听</div>
+        <div class="pillar-desc">Edge Neural 真人级语音朗读，逐句跟读，可调速，培养真实语感</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">📖</div>
+        <div class="pillar-title">读</div>
+        <div class="pillar-desc">汉字自动标注假名（振仮名），中文翻译对照，理解每一句的结构</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">💬</div>
+        <div class="pillar-title">问</div>
+        <div class="pillar-desc">AI 知道你正在读哪一句，随时提问语法、词汇、文化背景，即时回答</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 5 — 六大功能 ═════════════════════════════ -->
+  <div class="slide" id="s5">
+    <div class="slide-header">
+      <div class="slide-tag">核心功能</div>
+      <div class="slide-title">六大核心功能一览</div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fc-icon">🎵</div>
+        <div class="fc-title">Edge Neural 朗读</div>
+        <div class="fc-desc">七海（Nanami）、圭太（Keita）等高品质 AI 语音，逐句高亮跟读，0.5×—2× 调速</div>
+        <span class="fc-tag free">完全免费</span>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🈶</div>
+        <div class="fc-title">汉字假名注音</div>
+        <div class="fc-desc">基于 kuromoji 形态分析自动生成振仮名，点击开关即时切换显示 / 隐藏</div>
+        <span class="fc-tag free">完全免费</span>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🌏</div>
+        <div class="fc-title">逐句中文翻译</div>
+        <div class="fc-desc">点击「显示翻译」按需获取，翻译结果对照原句，支持中文 / 英文切换</div>
+        <span class="fc-tag ai">需 AI 模型</span>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🤖</div>
+        <div class="fc-title">上下文感知 AI 问答</div>
+        <div class="fc-desc">AI 知道你在读第几句，可以直接问"这个て形怎么用"，无需复制粘贴</div>
+        <span class="fc-tag ai">需 AI 模型</span>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🔍</div>
+        <div class="fc-title">多来源文章加载</div>
+        <div class="fc-desc">搜索日语维基百科、粘贴任意日语文本，或输入 NHK 等网页 URL 直接提取</div>
+        <span class="fc-tag free">完全免费</span>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🎤</div>
+        <div class="fc-title">语音输入问答</div>
+        <div class="fc-desc">支持中文语音提问，也可切换为日语朗读练习，口说训练一并覆盖</div>
+        <span class="fc-tag free">完全免费</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 6 — 使用流程 ═════════════════════════════ -->
+  <div class="slide" id="s6">
+    <div class="slide-header">
+      <div class="slide-tag">使用方式</div>
+      <div class="slide-title">三步完成一次完整练习</div>
+    </div>
+
+    <div class="flow-wrap">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <h4>选择练习材料</h4>
+        <p>搜索感兴趣的日语话题，或直接粘贴文章。内容越真实，学习效果越好。</p>
+        <div class="flow-detail">东京・寿司・アニメ・ビジネス</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <h4>听读结合练习</h4>
+        <p>播放朗读，对照假名注音和翻译，点击任意句子可跳转，字幕模式专注跟读。</p>
+        <div class="flow-detail">可调速 · 逐句高亮 · 字幕模式</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <h4>暂停 → AI 即时解答</h4>
+        <p>听到不懂的地方随时暂停，向 AI 提问语法、词汇、文化背景，马上得到解释。</p>
+        <div class="flow-detail">AI 知道你在读哪一句</div>
+      </div>
+    </div>
+
+    <div class="flow-screen">
+      <div>
+        <div class="fs-label">练习内容来源</div>
+        <div class="fs-val">日语维基百科 / 粘贴文本 / 网页 URL</div>
+      </div>
+      <div class="fs-sep"></div>
+      <div>
+        <div class="fs-label">语音质量</div>
+        <div class="fs-val">Edge Neural（七海 / 圭太）</div>
+      </div>
+      <div class="fs-sep"></div>
+      <div>
+        <div class="fs-label">AI 问答语言</div>
+        <div class="fs-val">中文回答，支持语音输入</div>
+      </div>
+      <div class="fs-sep"></div>
+      <div>
+        <div class="fs-label">数据安全</div>
+        <div class="fs-val">本地运行，数据不出本机</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 7 — AI 集成 ══════════════════════════════ -->
+  <div class="slide" id="s7">
+    <div class="slide-header">
+      <div class="slide-tag">AI 集成</div>
+      <div class="slide-title">灵活接入各类大模型，按需选择</div>
+    </div>
+
+    <div class="llm-grid">
+      <div class="llm-card">
+        <div class="llm-name">🖥 Ollama 本地模型</div>
+        <div class="llm-desc">Qwen、Llama 等模型在本地运行，完全离线，无需 API Key，数据绝对安全</div>
+        <span class="llm-badge lbg-free">完全免费</span>
+      </div>
+      <div class="llm-card">
+        <div class="llm-name">⚡ DeepSeek</div>
+        <div class="llm-desc">国产高性价比模型，中文理解极佳，价格约为 GPT-4 的 1/10</div>
+        <span class="llm-badge lbg-cheap">极低成本</span>
+      </div>
+      <div class="llm-card">
+        <div class="llm-name">⚡ Groq</div>
+        <div class="llm-desc">响应速度极快，有免费额度，适合日常练习场景</div>
+        <span class="llm-badge lbg-cheap">有免费额度</span>
+      </div>
+      <div class="llm-card">
+        <div class="llm-name">🤖 Anthropic Claude</div>
+        <div class="llm-desc">语言理解能力强，日语分析准确，按量计费</div>
+        <span class="llm-badge lbg-paid">按量付费</span>
+      </div>
+      <div class="llm-card">
+        <div class="llm-name">🔵 OpenAI GPT</div>
+        <div class="llm-desc">GPT-4o-mini 价格低廉，效果稳定，全球最广泛使用</div>
+        <span class="llm-badge lbg-paid">按量付费</span>
+      </div>
+      <div class="llm-card">
+        <div class="llm-name">🔧 自定义接口</div>
+        <div class="llm-desc">支持任意 OpenAI 兼容 API，公司内部模型也可接入</div>
+        <span class="llm-badge lbg-paid">自定义</span>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <div class="hb-icon">💡</div>
+      <div class="hb-text">
+        <h4>推荐起步方案：Ollama 本地 + Qwen2.5 模型</h4>
+        <p>一次性下载模型（约 4-8GB），之后永久免费使用，完全离线，适合企业内网环境</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 8 — 部署 ═════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <div class="slide-header">
+      <div class="slide-tag">部署</div>
+      <div class="slide-title">一键安装，两步启动</div>
+    </div>
+
+    <div class="deploy-grid">
+      <div class="deploy-card">
+        <div class="deploy-os">🪟 Windows</div>
+        <ul class="deploy-steps">
+          <li>
+            <div class="step-dot">1</div>
+            <span>从 GitHub 下载项目压缩包并解压</span>
+          </li>
+          <li>
+            <div class="step-dot">2</div>
+            <span>双击运行 <code>install.bat</code>，自动安装依赖（约 1-3 分钟）</span>
+          </li>
+          <li>
+            <div class="step-dot">3</div>
+            <span>双击 <code>start.bat</code>，浏览器自动打开 <code>localhost:3000</code></span>
+          </li>
+        </ul>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-os">🍎 macOS / Linux</div>
+        <ul class="deploy-steps">
+          <li>
+            <div class="step-dot">1</div>
+            <span>克隆或下载项目：<code>git clone …</code></span>
+          </li>
+          <li>
+            <div class="step-dot">2</div>
+            <span>运行 <code>bash install.sh</code>，自动检测环境并安装</span>
+          </li>
+          <li>
+            <div class="step-dot">3</div>
+            <span>运行 <code>bash start.sh</code>，浏览器自动打开</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="req-row">
+      <span>✅</span>
+      <span><strong>唯一前提</strong>：安装 Node.js 18+（官网一键下载，5 分钟完成，系统级环境）&nbsp;·&nbsp;
+      推荐使用 <strong>Microsoft Edge</strong> 浏览器以获得最佳语音质量</span>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 9 — 成本 ═════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <div class="slide-header">
+      <div class="slide-tag">成本分析</div>
+      <div class="slide-title">核心功能<em>完全免费</em>，AI 功能可选</div>
+    </div>
+
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>功能模块</th>
+          <th>成本</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>语音朗读（Edge Neural）</td>
+          <td><span class="badge-free">免费</span></td>
+          <td>Edge 浏览器内置，无调用次数限制，无需联网 API</td>
+        </tr>
+        <tr>
+          <td>假名注音（kuromoji）</td>
+          <td><span class="badge-free">免费</span></td>
+          <td>本地 NLP 库，一次安装永久使用</td>
+        </tr>
+        <tr>
+          <td>文章搜索（维基百科）</td>
+          <td><span class="badge-free">免费</span></td>
+          <td>Wikipedia 公开 API，无限制</td>
+        </tr>
+        <tr>
+          <td>中文翻译</td>
+          <td><span class="badge-opt">可选</span></td>
+          <td>Ollama 本地模型零成本；DeepSeek 约 ¥0.001 / 篇文章</td>
+        </tr>
+        <tr>
+          <td>AI 语法问答</td>
+          <td><span class="badge-opt">可选</span></td>
+          <td>Ollama 本地免费；付费 API 约 ¥0.01 / 次提问</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="summary-cards">
+      <div class="sum-card">
+        <div class="sum-val">¥0</div>
+        <div class="sum-label">基础功能每月成本</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val">~¥0.5</div>
+        <div class="sum-label">深度使用含 AI 月均成本</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val">本地</div>
+        <div class="sum-label">数据全程不离开本机</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 10 — CTA ════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <div class="cta-deco">塾</div>
+    <div class="cta-wrap">
+      <div class="cta-title">开始使用耳塾</div>
+      <div class="cta-sub">一次安装，随时练习 — 让日语学习融入日常工作流</div>
+
+      <div class="cta-row">
+        <div class="cta-card">
+          <h4>GitHub 开源地址</h4>
+          <p>
+            完整源码，非商业免费使用
+            <a class="cta-link" href="https://github.com/izoaixoah-sys/jishuku">
+              github.com/izoaixoah-sys/jishuku
+            </a>
+          </p>
+        </div>
+        <div class="cta-card">
+          <h4>立即开始的三步</h4>
+          <p>
+            ① 下载安装 Node.js 18+<br>
+            ② 运行 install.bat（Windows）<br>
+            ③ 打开 localhost:3000 开始练习
+          </p>
+        </div>
+        <div class="cta-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <h4 style="margin-bottom:12px;">扫码访问项目</h4>
+          <div class="qr-box">QR Code<br>（待生成）</div>
+        </div>
+      </div>
+
+      <div class="cta-bottom">
+        <div class="qa-chip">❓ Q &amp; A</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:14px;">感谢聆听 &nbsp;·&nbsp; 欢迎提问</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- ── Controls ────────────────────────── -->
+<div id="progress"><div id="progress-bar"></div></div>
+
+<div id="nav">
+  <button class="nav-btn" id="prevBtn" onclick="go(-1)">&#8592;</button>
+  <span id="counter"></span>
+  <button class="nav-btn" id="nextBtn" onclick="go(1)">&#8594;</button>
+</div>
+
+<div id="fs-hint" onclick="toggleFS()" title="按 F 全屏">⛶ 全屏</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const DARK_SLIDES = new Set([0, 9]); // indices of dark-background slides
+let cur = 0;
+
+function show(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(slides.length - 1, n));
+  slides[cur].classList.add('active');
+
+  const dark = DARK_SLIDES.has(cur);
+  document.getElementById('counter').textContent = `${cur + 1} / ${slides.length}`;
+  document.getElementById('counter').className = dark ? 'counter-light' : 'counter-dark';
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.className = 'nav-btn ' + (dark ? 'light' : 'dark');
+  });
+  document.getElementById('fs-hint').style.color = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)';
+  document.getElementById('progress-bar').style.width = ((cur + 1) / slides.length * 100) + '%';
+}
+
+function go(d) { show(cur + d); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ')  { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      { e.preventDefault(); go(-1); }
+  if (e.key === 'f' || e.key === 'F')                                     toggleFS();
+  if (e.key === 'Home')  show(0);
+  if (e.key === 'End')   show(slides.length - 1);
+});
+
+// Touch/swipe support
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+});
+
+function toggleFS() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+show(0);
+</script>
+</body>
+</html>

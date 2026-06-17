@@ -184,7 +184,9 @@ async function translateBatch(sentences, targetLang, llmConfig) {
   if (!hasLLM(llmConfig) || sentences.length === 0) return sentences.map(() => '');
 
   const CHUNK = 10;
-  const langLabel = targetLang === 'zh' ? '简体中文' : 'English';
+  const langLabel = targetLang === 'zh'
+    ? 'Simplified Chinese (简体中文，必须使用简体字，严禁繁体字，以中国大陆标准输出)'
+    : 'English';
   const system = `Translate each numbered Japanese sentence into ${langLabel}.\nOutput the translations as a numbered list in exactly the same format:\n1. [translation]\n2. [translation]\nOne line per sentence, same numbering. No other text.`;
 
   const results = [];
