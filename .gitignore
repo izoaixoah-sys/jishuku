@@ -1,0 +1,11 @@
+node_modules/
+.env
+*.log
+npm-debug.log*
+
+# 运行日志（本地调试用）
+out*.txt
+err*.txt
+srv*.txt
+server_out.txt
+server_err.txt

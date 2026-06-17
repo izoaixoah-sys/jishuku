@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>耳塾 — 日语听力会话训练</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header id="header">
+    <div class="header-brand">
+      <div class="brand-icon">耳</div>
+      <div>
+        <div class="brand-title">耳塾</div>
+        <div class="brand-sub">日语听力 · 会话训练</div>
+      </div>
+    </div>
+
+    <div class="header-input">
+      <div class="source-tabs">
+        <button class="tab-btn active" data-tab="search">🔍 维基百科搜索</button>
+        <button class="tab-btn" data-tab="url">🔗 网页 URL</button>
+        <button class="tab-btn" data-tab="paste">📋 粘贴文本</button>
+      </div>
+
+      <div class="tab-panel" id="tab-search">
+        <div class="input-row">
+          <input id="searchInput" type="text" placeholder="搜索感兴趣的话题，如：東京・寿司・桜・アニメ"
+                 autocomplete="off">
+          <button id="searchBtn" class="btn-primary">搜索</button>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+
+      <div class="tab-panel hidden" id="tab-url">
+        <div class="input-row">
+          <input id="urlInput" type="url" placeholder="粘贴日语网页链接，如 NHK・朝日新聞・Wikipedia 文章"
+                 autocomplete="off">
+          <button id="loadUrlBtn" class="btn-primary">提取</button>
+        </div>
+        <div id="urlHint" class="url-hint">支持 NHK Web Easy・Wikipedia・新闻网站等静态内容页面</div>
+      </div>
+
+      <div class="tab-panel hidden" id="tab-paste">
+        <textarea id="pasteInput" placeholder="在此粘贴日文文章…" rows="3"></textarea>
+        <button id="loadTextBtn" class="btn-primary">加载文章</button>
+      </div>
+    </div>
+
+    <div class="header-settings">
+      <label class="setting-label">
+        翻译
+        <select id="langSelect">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button id="llmSettingsBtn" class="btn-icon" title="AI 模型配置">⚙</button>
+    </div>
+  </header>
+
+  <!-- ── LLM Settings Modal ────────────────────────────────── -->
+  <div id="llmModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>⚙ AI 模型配置</span>
+        <button id="llmModalClose" class="btn-icon">✕</button>
+      </div>
+
+      <div id="historySection" class="modal-section hidden">
+        <div class="modal-label">历史配置 <span class="modal-hint">（点击加载 · ✕ 删除）</span></div>
+        <div id="llmHistoryList" class="history-list"></div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">快速预设</div>
+        <div class="preset-grid">
+          <button class="btn-preset" data-preset="anthropic">Anthropic</button>
+          <button class="btn-preset" data-preset="openai">OpenAI</button>
+          <button class="btn-preset" data-preset="ollama">Ollama 本地</button>
+          <button class="btn-preset" data-preset="deepseek">DeepSeek</button>
+          <button class="btn-preset" data-preset="groq">Groq</button>
+          <button class="btn-preset" data-preset="custom">自定义</button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">接口类型</div>
+        <div class="radio-row">
+          <label><input type="radio" name="llmType" value="anthropic"> Anthropic 格式</label>
+          <label><input type="radio" name="llmType" value="openai" checked> OpenAI 兼容格式</label>
+        </div>
+      </div>
+
+      <div class="modal-section" id="baseUrlRow">
+        <div class="modal-label">API 地址</div>
+        <input id="llmBaseUrl" type="text" class="modal-input" placeholder="https://api.openai.com/v1">
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">API Key <span class="modal-hint">（Ollama 本地无需填写）</span></div>
+        <input id="llmApiKey" type="password" class="modal-input" placeholder="sk-...">
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">模型名称</div>
+        <div class="model-row">
+          <input id="llmModel" type="text" class="modal-input" placeholder="gpt-4o-mini">
+          <button id="fetchModelsBtn" class="btn-secondary btn-sm">获取列表</button>
+        </div>
+        <select id="modelSelect" class="modal-input hidden" size="4"></select>
+      </div>
+
+      <div class="modal-footer">
+        <div id="llmTestResult" class="test-result"></div>
+        <div class="modal-actions">
+          <button id="llmTestBtn" class="btn-secondary">测试连接</button>
+          <button id="llmSaveBtn" class="btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main layout ────────────────────────────────────── -->
+  <div id="mainLayout">
+
+    <!-- Article panel -->
+    <div id="articlePanel">
+
+      <div id="welcomePanel">
+        <div class="welcome-content">
+          <div class="welcome-icon">🎌</div>
+          <h2>欢迎使用日語練習</h2>
+          <p>搜索感兴趣的日语文章，或粘贴日语文本开始练习</p>
+          <ul class="feature-list">
+            <li>🔊 真人语音朗读，可调节速度</li>
+            <li>📖 汉字假名注音，一键切换</li>
+            <li>🌏 自动翻译中文对照</li>
+            <li>💬 随时暂停，向 AI 提问语法词汇</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="loadingPanel" class="hidden">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div id="loadingSteps">
+            <div class="load-step" id="step-fetch">⬜ 获取文章</div>
+            <div class="load-step" id="step-furigana">⬜ 生成假名注音</div>
+            <div class="load-step" id="step-translate">⬜ 翻译文章</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="articleDisplay" class="hidden">
+        <div id="articleMeta">
+          <h2 id="articleTitle"></h2>
+          <div id="articleSource" class="article-source hidden">
+            <span class="source-label">来源</span>
+            <a id="articleSourceLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+          </div>
+          <div id="noKeyWarning" class="hidden warning-banner">
+            ⚠ 未配置 AI 模型，翻译功能不可用。
+            <button class="warn-link" onclick="document.getElementById('llmSettingsBtn').click()">点击 ⚙ 配置模型</button>
+          </div>
+          <p class="article-note">💡 点击任意句子可跳转朗读 · 假名注音由自动分析生成，专有名词可能不准确</p>
+        </div>
+        <div id="articleContent"></div>
+      </div>
+
+    </div>
+
+    <!-- Chat panel -->
+    <div id="chatPanel">
+      <div class="chat-header">
+        <div>
+          <div class="chat-title">AI 问答助手</div>
+          <div class="chat-subtitle">可随时提问语法・词汇・文章内容</div>
+        </div>
+        <label class="toggle-label chat-read-toggle" title="AI 回答自动朗读">
+          <input type="checkbox" id="autoReadToggle" checked>
+          🔊 自动朗读
+        </label>
+      </div>
+      <div id="chatMessages">
+        <div class="chat-msg assistant">
+          <div class="msg-body">
+            你好！加载文章后，我可以帮你解答：<br>
+            • <strong>语法</strong>：句型、助词、动词变形<br>
+            • <strong>词汇</strong>：读音、意思、用法<br>
+            • <strong>内容</strong>：文章理解<br>
+            • <strong>文化</strong>：日本文化背景
+          </div>
+        </div>
+      </div>
+      <div id="currentSentenceCtx" class="current-ctx hidden">
+        <span class="ctx-label">当前句</span>
+        <span id="ctxProgress" class="ctx-progress"></span>
+        <span id="ctxText" class="ctx-text"></span>
+      </div>
+      <div id="chatInputArea">
+        <textarea id="chatInput" placeholder="用中文或日语提问…" rows="2"></textarea>
+        <div class="chat-btns">
+          <button id="micBtn" class="btn-icon mic-btn" title="语音输入">🎤</button>
+          <button id="micLangBtn" class="btn-secondary btn-sm mic-lang" title="切换识别语言">中</button>
+          <button id="sendBtn" class="btn-primary">发送</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /mainLayout -->
+
+  <!-- ── Controls bar ───────────────────────────────────── -->
+  <div id="controlsBar">
+    <div class="ctrl-group ctrl-playback">
+      <button id="prevBtn" class="ctrl-btn" title="上一句">⏮</button>
+      <button id="playBtn" class="ctrl-btn ctrl-play" title="播放 / 暂停">▶</button>
+      <button id="nextBtn" class="ctrl-btn" title="下一句">⏭</button>
+      <span id="progressLabel" class="progress-label">— / —</span>
+    </div>
+
+    <div class="ctrl-group ctrl-speed">
+      <span class="ctrl-label">速度</span>
+      <input id="speedSlider" type="range" min="0.5" max="2" step="0.1" value="1">
+      <span id="speedLabel">1.0×</span>
+    </div>
+
+    <div class="ctrl-group ctrl-voice">
+      <span id="ttsModeIndicator" class="tts-badge tts-webspeech">🔊 系统语音</span>
+      <select id="speakerSelect" class="speaker-select hidden" title="选择语音"></select>
+      <button id="naturalVoiceHint" class="natural-hint hidden" title="点击查看获取高品质语音的方法"
+        onclick="document.getElementById('naturalVoiceGuide').classList.toggle('hidden')">✨ 获取更好音质</button>
+    </div>
+    <div id="naturalVoiceGuide" class="natural-guide hidden">
+      <strong>推荐：使用 Microsoft Edge 浏览器</strong><br>
+      Edge 已内置七海（Nanami）、圭太（Keita）等 Neural 高品质日语语音，无需额外安装。<br><br>
+      如果在 Edge 中仍看不到这些语音，可手动下载：<br>
+      Edge 设置 → 语言 → 日本語 → <strong>管理语音</strong> → 下载 Nanami / Keita<br><br>
+      安装后<strong>刷新本页面</strong>，语音列表会自动更新。
+    </div>
+
+    <div class="ctrl-group ctrl-toggles">
+      <label class="toggle-label">
+        <input type="checkbox" id="furiganaToggle" checked>
+        <span>假名注音</span>
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="translationToggle">
+        <span>显示翻译</span>
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="subtitleToggle">
+        <span>字幕模式</span>
+      </label>
+    </div>
+  </div>
+
+</div><!-- /app -->
+<script src="app.js"></script>
+</body>
+</html>
