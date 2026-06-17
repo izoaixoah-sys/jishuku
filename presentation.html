@@ -307,9 +307,49 @@ html, body {
 .fs-sep   { width: 1px; background: rgba(255,255,255,0.15); align-self: stretch; }
 
 /* ═══════════════════════════════════════
-   SLIDE 7 — AI 集成
+   SLIDE 7 — 技术架构
 ════════════════════════════════════════ */
-#s7 { background: #f8fafc; }
+#s7 { background: var(--white); }
+
+.arch-cols {
+  display: grid; grid-template-columns: 1fr 44px 1fr 44px 1fr; gap: 0;
+  width: 100%; align-items: start; margin-bottom: 20px;
+}
+.arch-col {
+  background: var(--white); border-radius: var(--r);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.arch-col-hd {
+  padding: 11px 16px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+}
+.arch-col-hd.browser  { background: #eff6ff; color: #1d4ed8; border-bottom: 1px solid #bfdbfe; }
+.arch-col-hd.server   { background: #f0fdf4; color: #065f46; border-bottom: 1px solid #86efac; }
+.arch-col-hd.external { background: #f9fafb; color: #6b7280; border-bottom: 1px solid var(--border); }
+.arch-row {
+  padding: 9px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ar-name { font-size: 13px; font-weight: 600; color: var(--navy); }
+.ar-desc { font-size: 12px; color: var(--text2); }
+.arch-arrow-col {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: #94a3b8; padding-top: 16px;
+}
+.arch-notes {
+  width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.arch-note {
+  background: var(--light); border-radius: 8px; padding: 12px 14px;
+}
+.arch-note .an-icon  { font-size: 18px; margin-bottom: 6px; }
+.arch-note .an-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.arch-note .an-desc  { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+/* ═══════════════════════════════════════
+   SLIDE 8 — AI 集成
+════════════════════════════════════════ */
+#s8 { background: #f8fafc; }
 
 .llm-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
@@ -340,9 +380,9 @@ html, body {
 .hb-text p  { font-size: 13px; color: var(--text2); }
 
 /* ═══════════════════════════════════════
-   SLIDE 8 — 一键部署
+   SLIDE 9 — 一键部署
 ════════════════════════════════════════ */
-#s8 { background: var(--white); }
+#s9 { background: var(--white); }
 
 .deploy-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
@@ -382,9 +422,9 @@ code {
 .req-row strong { font-weight: 700; }
 
 /* ═══════════════════════════════════════
-   SLIDE 9 — 成本
+   SLIDE 10 — 成本
 ════════════════════════════════════════ */
-#s9 { background: #f8fafc; }
+#s10 { background: #f8fafc; }
 
 .cost-table {
   width: 100%; border-collapse: collapse;
@@ -418,9 +458,9 @@ code {
 .sum-card .sum-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
 
 /* ═══════════════════════════════════════
-   SLIDE 10 — CTA
+   SLIDE 11 — CTA
 ════════════════════════════════════════ */
-#s10 {
+#s11 {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
   color: #fff;
 }
@@ -694,8 +734,104 @@ code {
     </div>
   </div>
 
-  <!-- ══ SLIDE 7 — AI 集成 ══════════════════════════════ -->
+  <!-- ══ SLIDE 7 — 技术架构 ════════════════════════════ -->
   <div class="slide" id="s7">
+    <div class="slide-header">
+      <div class="slide-tag">技术架构</div>
+      <div class="slide-title">轻量本地架构，<em>零云端依赖</em></div>
+    </div>
+
+    <div class="arch-cols">
+      <div class="arch-col">
+        <div class="arch-col-hd browser">🌐 浏览器前端</div>
+        <div class="arch-row">
+          <div class="ar-name">原生 HTML / CSS / JS</div>
+          <div class="ar-desc">无前端框架依赖，任意现代浏览器可运行</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">Edge Neural WebSocket</div>
+          <div class="ar-desc">高品质日语语音（七海 Nanami / 圭太 Keita）</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">Web Speech API</div>
+          <div class="ar-desc">浏览器内置 TTS 备用 + 语音输入识别</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">Wikipedia REST API</div>
+          <div class="ar-desc">日语文章搜索与全文提取</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow-col">⇄</div>
+
+      <div class="arch-col">
+        <div class="arch-col-hd server">🖥 本地服务端</div>
+        <div class="arch-row">
+          <div class="ar-name">Node.js 18 + Express</div>
+          <div class="ar-desc">轻量 HTTP 服务，本地 3000 端口运行</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">kuroshiro + kuromoji</div>
+          <div class="ar-desc">日语形态素分析，汉字自动标注假名读音</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">ws（WebSocket）</div>
+          <div class="ar-desc">Edge TTS 语音流代理，解决跨域问题</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">统一 LLM 调用层</div>
+          <div class="ar-desc">Anthropic SDK + OpenAI 兼容接口双路支持</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow-col">→</div>
+
+      <div class="arch-col">
+        <div class="arch-col-hd external">☁ 可选外部（AI 功能）</div>
+        <div class="arch-row">
+          <div class="ar-name">Ollama（本地运行）</div>
+          <div class="ar-desc">完全离线，无 API Key，推荐首选</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">Anthropic / OpenAI</div>
+          <div class="ar-desc">云端高质量模型，按量付费</div>
+        </div>
+        <div class="arch-row">
+          <div class="ar-name">DeepSeek / Groq</div>
+          <div class="ar-desc">低成本 / 有免费额度的替代方案</div>
+        </div>
+        <div class="arch-row" style="background:#fafafa;">
+          <div class="ar-desc" style="font-size:11px;color:#94a3b8;">翻译与问答功能仅在配置 AI 后启用</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-notes">
+      <div class="arch-note">
+        <div class="an-icon">📦</div>
+        <div class="an-title">依赖极简</div>
+        <div class="an-desc">npm 包仅 5 个，安装体积约 80 MB</div>
+      </div>
+      <div class="arch-note">
+        <div class="an-icon">🔒</div>
+        <div class="an-title">数据本地</div>
+        <div class="an-desc">学习记录与配置文件全部保存在本机</div>
+      </div>
+      <div class="arch-note">
+        <div class="an-icon">⚡</div>
+        <div class="an-title">启动迅速</div>
+        <div class="an-desc">首次加载词典约 3 秒，之后即时响应</div>
+      </div>
+      <div class="arch-note">
+        <div class="an-icon">🔧</div>
+        <div class="an-title">开源可扩展</div>
+        <div class="an-desc">MIT 许可，可根据团队需求自由修改定制</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 8 — AI 集成 ══════════════════════════════ -->
+  <div class="slide" id="s8">
     <div class="slide-header">
       <div class="slide-tag">AI 集成</div>
       <div class="slide-title">灵活接入各类大模型，按需选择</div>
@@ -743,8 +879,8 @@ code {
     </div>
   </div>
 
-  <!-- ══ SLIDE 8 — 部署 ═════════════════════════════════ -->
-  <div class="slide" id="s8">
+  <!-- ══ SLIDE 9 — 部署 ═════════════════════════════════ -->
+  <div class="slide" id="s9">
     <div class="slide-header">
       <div class="slide-tag">部署</div>
       <div class="slide-title">一键安装，两步启动</div>
@@ -794,8 +930,8 @@ code {
     </div>
   </div>
 
-  <!-- ══ SLIDE 9 — 成本 ═════════════════════════════════ -->
-  <div class="slide" id="s9">
+  <!-- ══ SLIDE 10 — 成本 ════════════════════════════════ -->
+  <div class="slide" id="s10">
     <div class="slide-header">
       <div class="slide-tag">成本分析</div>
       <div class="slide-title">核心功能<em>完全免费</em>，AI 功能可选</div>
@@ -854,8 +990,8 @@ code {
     </div>
   </div>
 
-  <!-- ══ SLIDE 10 — CTA ════════════════════════════════ -->
-  <div class="slide" id="s10">
+  <!-- ══ SLIDE 11 — CTA ════════════════════════════════ -->
+  <div class="slide" id="s11">
     <div class="cta-deco">塾</div>
     <div class="cta-wrap">
       <div class="cta-title">开始使用耳塾</div>
@@ -907,7 +1043,7 @@ code {
 
 <script>
 const slides = Array.from(document.querySelectorAll('.slide'));
-const DARK_SLIDES = new Set([0, 9]); // indices of dark-background slides
+const DARK_SLIDES = new Set([0, 10]); // indices of dark-background slides
 let cur = 0;
 
 function show(n) {
